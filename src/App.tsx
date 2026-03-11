@@ -1,7 +1,6 @@
 import { type FC, useState } from "react";
 import "./App.css";
 import { type Todo, useTodos } from "./hooks/todo";
-import { manta } from "./lib/manta";
 
 function App() {
 	const [inputValue, setInputValue] = useState("");
