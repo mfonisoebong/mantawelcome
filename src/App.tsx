@@ -13,16 +13,23 @@ function App() {
 			setIsLoading(true);
 			if (inputValue.trim() === "") return;
 
-			await manta.createRecords({
-				table: "todos",
-				data: [
-					{
-						task: inputValue,
-						status: "pending",
-						id: crypto.randomUUID(),
+			const lastTodo = todos.data ? todos.data[todos.data.length - 1] : null;
+			const newPkid = lastTodo ? Number(lastTodo.pkid) + 1 : 1;
+
+			await fetch(
+				"https://api.mantahq.com/api/workflow/obcodelab/mantawelcome/create-task",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
 					},
-				],
-			});
+					body: JSON.stringify({
+						task_description: inputValue,
+						pkid: newPkid,
+						status: "pending",
+					}),
+				},
+			);
 			setInputValue("");
 			await todos.refetch();
 		} catch (err) {
@@ -61,7 +68,7 @@ function App() {
 			</div>
 			<ul className="todo-list">
 				{todos.data?.map((todo) => (
-					<TodoItem key={todo.id} todo={todo} />
+					<TodoItem key={todo.pkid} todo={todo} />
 				))}
 			</ul>
 			{todos.data?.length === 0 && (
@@ -75,38 +82,19 @@ const TodoItem: FC<{ todo: Todo }> = ({ todo }) => {
 	const todos = useTodos();
 	const [isLoading, setIsLoading] = useState(false);
 
-	const toggleTodo = async () => {
-		try {
-			setIsLoading(true);
-			const newStatus = todo.status === "completed" ? "pending" : "completed";
-			await manta.updateRecords({
-				table: "todos",
-				data: {
-					status: newStatus,
-				},
-				where: {
-					id: todo.id,
-				},
-			});
-			await todos.refetch();
-		} catch (err) {
-			alert("Failed to update todo. Please try again.");
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
 	const deleteTodo = async () => {
 		try {
 			setIsLoading(true);
-			await manta.deleteRecords({
-				table: "todos",
-				where: [
-					{
-						id: todo.id,
+			await fetch(
+				`https://api.mantahq.com/api/workflow/obcodelab/mantawelcome/delete-task/${todo.pkid}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
 					},
-				],
-			});
+					body: JSON.stringify({ pkid: todo.pkid }),
+				},
+			);
 			await todos.refetch();
 		} catch (err) {
 			alert("Failed to delete todo. Please try again.");
@@ -119,14 +107,7 @@ const TodoItem: FC<{ todo: Todo }> = ({ todo }) => {
 		<li
 			className={`todo-item ${todo.status === "completed" ? "completed" : ""}`}
 		>
-			<input
-				type="checkbox"
-				disabled={isLoading}
-				checked={todo.status === "completed"}
-				onChange={() => toggleTodo()}
-				className="todo-checkbox"
-			/>
-			<span className="todo-text">{todo.task}</span>
+			<span className="todo-text">{todo.task_description}</span>
 			<button
 				type="button"
 				onClick={deleteTodo}

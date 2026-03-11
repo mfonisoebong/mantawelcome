@@ -1,20 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { manta } from "../lib/manta";
 
 export type Todo = {
-	id: string;
-	task: string;
+	pkid: string;
+	task_description: string;
 	status: "completed" | "pending";
 };
 
 export function useTodos() {
-	const fetcher = async () =>
-		await manta
-			.fetchAllRecords({
-				table: "todos",
-				fields: ["id", "task", "status"],
-			})
-			.then((res) => res.data as Todo[]);
+	const fetcher = async (): Promise<Todo[]> => {
+		const response: { data: Todo[] } = await fetch(
+			"https://api.mantahq.com/api/workflow/obcodelab/mantawelcome/get-tasks",
+		).then((res) => res.json());
+		return response.data;
+	};
 
 	return useQuery({
 		queryKey: ["todos"],
